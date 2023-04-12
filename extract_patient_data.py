@@ -1,6 +1,7 @@
-from connect_postgres import connect_to_postgres
+from connect_postgres import insert_bulk_patient_data, insert_bulk_identifier_data
 import os
 import json
+
 
 def insert_patient_json_data(path):
     files = [path + "/" + file for file in os.listdir(path) if file.endswith(".json")]
@@ -17,13 +18,10 @@ def insert_patient_json_data(path):
                 bulk_patient_data_insert.append(patient_information)
             identifier_information = get_patient_identifier_data(patient_data)
             if identifier_information:
-                bulk_patient_identifier_insert.append(identifier_information)
+                bulk_patient_identifier_insert.extend(identifier_information)
 
-    con = connect_to_postgres()
-    cursor = con.cursor()
-    con.autocommit = True
-
-    # save data to postgres
+    insert_bulk_patient_data(bulk_patient_data_insert)
+    insert_bulk_identifier_data(bulk_patient_identifier_insert)
 
 
             
@@ -88,12 +86,12 @@ def get_patient_data(patient_data):
     multiple_birth = get_field_from_patient_data(["multipleBirthBoolean"])
     language = get_field_from_patient_data(["communication","language","text"])
     
-    return [us_core_race,us_core_ethnicity,mothers_maiden_name,us_core_birthsex,birthplace_city,
+    return (id,us_core_race,us_core_ethnicity,mothers_maiden_name,us_core_birthsex,birthplace_city,
             birthplace_state,birthplace_country,disability_adjusted_life_years,
             quality_adjusted_life_years,name_use,name_family,name_given,name_prefix,
             telecom_system,telephone_value,telecom_use,gender,birthdate,deceasedDateTime,
             address_lat,address_long,address_line,address_city,address_state,address_country,
-            marital_status,multiple_birth,language]
+            marital_status,multiple_birth,language)
 
 
 def get_patient_identifier_data(patient_data):
@@ -102,9 +100,9 @@ def get_patient_identifier_data(patient_data):
     for record in identifier_data_records:
         if not "type" in record:
             continue
-        identifier_information.append([patient_data["id"],
+        identifier_information.append((patient_data["id"],
                                        record["type"]["coding"][0]["display"],
-                                       record["value"]])
+                                       record["value"]))
     return identifier_information
 
 
