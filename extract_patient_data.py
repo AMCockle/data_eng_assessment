@@ -5,13 +5,19 @@ import json
 def insert_patient_json_data(path):
     files = [path + "/" + file for file in os.listdir(path) if file.endswith(".json")]
     
+    bulk_patient_data_insert = []
+    bulk_patient_identifier_insert = []
     for file in files:
         with open(file, "r", encoding="utf8") as patient_data_json:
-            patient_data = json.load(patient_data_json)
-            entries = patient_data["entry"]
-            get_patient_data(entries)
-            # get identifier data
-
+            patient_all_data = json.load(patient_data_json)
+            entries = patient_all_data["entry"]
+            patient_data = [entry["resource"] for entry in entries if entry["resource"]["resourceType"]=="Patient"][0]
+            patient_information = get_patient_data(patient_data)
+            if patient_information:
+                bulk_patient_data_insert.append(patient_information)
+            identifier_information = get_patient_identifier_data(patient_data)
+            if identifier_information:
+                bulk_patient_identifier_insert.append(identifier_information)
 
     con = connect_to_postgres()
     cursor = con.cursor()
@@ -21,8 +27,7 @@ def insert_patient_json_data(path):
 
 
             
-def get_patient_data(entries):
-    patient_data = [entry["resource"] for entry in entries if entry["resource"]["resourceType"]=="Patient"][0]
+def get_patient_data(patient_data):
     id = patient_data["id"]
     extension = patient_data["extension"]
 
@@ -83,7 +88,24 @@ def get_patient_data(entries):
     multiple_birth = get_field_from_patient_data(["multipleBirthBoolean"])
     language = get_field_from_patient_data(["communication","language","text"])
     
+    return [us_core_race,us_core_ethnicity,mothers_maiden_name,us_core_birthsex,birthplace_city,
+            birthplace_state,birthplace_country,disability_adjusted_life_years,
+            quality_adjusted_life_years,name_use,name_family,name_given,name_prefix,
+            telecom_system,telephone_value,telecom_use,gender,birthdate,deceasedDateTime,
+            address_lat,address_long,address_line,address_city,address_state,address_country,
+            marital_status,multiple_birth,language]
 
+
+def get_patient_identifier_data(patient_data):
+    identifier_data_records = patient_data["identifier"]
+    identifier_information = []
+    for record in identifier_data_records:
+        if not "type" in record:
+            continue
+        identifier_information.append([patient_data["id"],
+                                       record["type"]["coding"][0]["display"],
+                                       record["value"]])
+    return identifier_information
 
 
 if __name__ == "__main__":
