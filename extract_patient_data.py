@@ -4,32 +4,48 @@ import json
 
 
 def insert_patient_json_data(path):
+    """
+    Extract all relevant data from the patient JSON records and insert into
+    Postgres in bulk
+    """
+    # Pull only Json files from file path provided
     files = [path + "/" + file for file in os.listdir(path) if file.endswith(".json")]
-    
     bulk_patient_data_insert = []
     bulk_patient_identifier_insert = []
     for file in files:
         with open(file, "r", encoding="utf8") as patient_data_json:
+            # Load Json data
             patient_all_data = json.load(patient_data_json)
             entries = patient_all_data["entry"]
             patient_data = [entry["resource"] for entry in entries if entry["resource"]["resourceType"]=="Patient"][0]
+            # Extract information for patient table
             patient_information = get_patient_data(patient_data)
             if patient_information:
                 bulk_patient_data_insert.append(patient_information)
+            # Extract information for patient identifier table
             identifier_information = get_patient_identifier_data(patient_data)
             if identifier_information:
                 bulk_patient_identifier_insert.extend(identifier_information)
 
+    # Run bulk inserts
     insert_bulk_patient_data(bulk_patient_data_insert)
     insert_bulk_identifier_data(bulk_patient_identifier_insert)
 
 
             
 def get_patient_data(patient_data):
+    """
+    Get all data required for the patient table
+    Some fields are not always available so return None in these cases
+    """
     id = patient_data["id"]
     extension = patient_data["extension"]
 
+
     def get_extension_field(ext_path, field_name):
+        """
+        Get nested fields from extension data  
+        """
         ext = [ex for ex in extension if ex["url"].endswith(field_name)]
         if ext_path in ext[0]:
             return ext[0][ext_path]
@@ -38,7 +54,11 @@ def get_patient_data(patient_data):
             return value_list[0]
         return None
     
+
     def get_field_from_patient_data(fields: list[str], return_list: bool = False):
+        """
+        Pull nested fields from patient data with option to return a list or first element 
+        """
         if not fields:
             return None
         if isinstance(fields, str):
@@ -95,6 +115,9 @@ def get_patient_data(patient_data):
 
 
 def get_patient_identifier_data(patient_data):
+    """
+    Get just the identifier data - could be many different values
+    """
     identifier_data_records = patient_data["identifier"]
     identifier_information = []
     for record in identifier_data_records:

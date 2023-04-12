@@ -7,11 +7,15 @@ PASSWORD = os.environ.get('pgadmin_password')
 
 def connect_to_postgres():
     return psycopg2.connect(
-            host="localhost", database="postgres", user="postgres", password=PASSWORD
+            host="localhost", database="postgres", user=USER, password=PASSWORD
         )
     
 
 def prepare_data_tables():
+    """
+    Create a new schema for our patient data (if it doesn't already exist)
+    and create relevant tables needed to easily display the data
+    """
     con = connect_to_postgres()
     cursor = con.cursor()
     cursor.execute("CREATE SCHEMA IF NOT EXISTS patient_data;")
@@ -42,6 +46,9 @@ def prepare_data_tables():
 
 
 def insert_bulk_patient_data(data):
+    """
+    Insert patient data into the patient table in bulk
+    """
     con = connect_to_postgres()
     cursor = con.cursor()
 
@@ -56,8 +63,10 @@ def insert_bulk_patient_data(data):
     con.close()
 
 
-# TODO: Fix these to run as one tidy function
 def insert_bulk_identifier_data(data):
+    """
+    Insert patient identifier data into the patient identifier table in bulk
+    """
     con = connect_to_postgres()
     cursor = con.cursor()
 
