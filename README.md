@@ -1,4 +1,5 @@
 How to install and run:
+
 Summary:
 - A 'patient_data' schema is created in Postgres
 - Empty tables are created for patient and patient identifier information
