@@ -6,9 +6,12 @@ PASSWORD = os.environ.get('pgadmin_password')
 
 
 def connect_to_postgres():
-    return psycopg2.connect(
-            host="localhost", database="postgres", user=USER, password=PASSWORD
-        )
+    try:
+        return psycopg2.connect(
+                host="localhost", database="postgres", user=USER, password=PASSWORD
+            )
+    except: 
+        raise Exception("Cannot connect to Postgres")
     
 
 def prepare_data_tables():
