@@ -6,7 +6,7 @@ Summary:
 - The JSON files are read in and the relevant information pulled from each record
 - The retrieved information is inserted, in bulk, into the postgres tables
 
-In python run 'extract_patient_data.py'
+run the following command: python -m run_full_process
 
 How to see and use the results:
 - Results are held in the 'patient_data' schema in postgres. The table 'patient' contains most of the information on each individual, such as name, address, contact information and identifying information, such as, social security number, passport number are held in the 'patient_identifer' table.
