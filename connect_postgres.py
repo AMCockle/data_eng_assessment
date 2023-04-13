@@ -1,11 +1,14 @@
 import psycopg2
 import os
+import logging
 
 USER = os.getenv('pgadmin_user')
 PASSWORD = os.environ.get('pgadmin_password')
 
+logger = logging.getLogger("Connecting to Postgres")
 
 def connect_to_postgres():
+    logger.info("Attempting to connect to Postgres")
     try:
         return psycopg2.connect(
                 host="localhost", database="postgres", user=USER, password=PASSWORD
@@ -22,6 +25,7 @@ def prepare_data_tables():
     con = connect_to_postgres()
     cursor = con.cursor()
     cursor.execute("CREATE SCHEMA IF NOT EXISTS patient_data;")
+    logger.info("Ensuring 'patient_data' schema exists")
     cursor.execute("CREATE TABLE IF NOT EXISTS patient_data.patient(id varchar(255) NOT NULL UNIQUE PRIMARY KEY, \
                    us_core_race VARCHAR(255), us_core_ethnicity VARCHAR(255), \
                    mothers_maiden_name VARCHAR(255), us_core_birthsex VARCHAR(255), \
@@ -35,6 +39,7 @@ def prepare_data_tables():
                    address_long FLOAT, address_line VARCHAR(255), address_city VARCHAR(255), \
                    address_state VARCHAR(255), address_country VARCHAR(255), \
                    marital_status VARCHAR(255), multiple_birth BOOL, language VARCHAR(255))")
+    logger.info("Ensuring 'patient' database exists")
     cursor.execute("CREATE TABLE IF NOT EXISTS patient_data.patient_identifier(identifier_id SERIAL, \
                                                                 patient_id VARCHAR(255) NOT NULL, \
                                                                 identifier_type varchar(255) NOT NULL, \
@@ -43,10 +48,21 @@ def prepare_data_tables():
                                                                 FOREIGN KEY(patient_id) REFERENCES patient_data.patient(id) \
                                                                 ON DELETE CASCADE \
                                                                 ON UPDATE CASCADE)")
+    logger.info("Ensuring 'patient_identifier' database exists")
     con.commit()
     cursor.close()
     con.close()
 
+
+def drop_tables():
+    con = connect_to_postgres()
+    cursor = con.cursor()
+    cursor.execute("DROP TABLE IF EXISTS patient_data.patient CASCADE;")
+    cursor.execute("DROP TABLE IF EXISTS patient_data.patient_identifier;")
+    con.commit()
+    cursor.close()
+    con.close()
+    
 
 def insert_bulk_patient_data(data):
     """
@@ -60,7 +76,7 @@ def insert_bulk_patient_data(data):
     
     cursor.execute("INSERT INTO patient_data.patient(id,us_core_race,us_core_ethnicity,mothers_maiden_name,us_core_birthsex,birthplace_city,birthplace_state,birthplace_country,disability_adjusted_life_years,quality_adjusted_life_years,name_use,name_family,name_given,name_prefix,telecom_system,telephone_value,telecom_use,gender,birthdate,deceasedDateTime,address_lat,address_long,address_line,address_city,address_state,address_country,marital_status,multiple_birth,language) \
                    VALUES " + (args))
-
+    logger.info("Inserted data into 'patient' database")
     con.commit()
     cursor.close()
     con.close()
@@ -78,7 +94,7 @@ def insert_bulk_identifier_data(data):
     
     cursor.execute("INSERT INTO patient_data.patient_identifier(patient_id, identifier_type, identifier_value) \
                    VALUES " + (args))
-
+    logger.info("Inserted data into 'patient_identifier' database")
     con.commit()
     cursor.close()
     con.close()

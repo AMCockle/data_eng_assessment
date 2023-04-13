@@ -1,7 +1,9 @@
 from connect_postgres import insert_bulk_patient_data, insert_bulk_identifier_data
 import os
 import json
+import logging
 
+logger = logging.getLogger("Retrieving patient data from JSON files")
 
 def insert_patient_json_data(path):
     """
@@ -26,7 +28,7 @@ def insert_patient_json_data(path):
             identifier_information = get_patient_identifier_data(patient_data)
             if identifier_information:
                 bulk_patient_identifier_insert.extend(identifier_information)
-
+    logger.info("All patient and patient identifier information collected")
     # Run bulk inserts
     insert_bulk_patient_data(bulk_patient_data_insert)
     insert_bulk_identifier_data(bulk_patient_identifier_insert)
